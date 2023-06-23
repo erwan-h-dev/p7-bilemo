@@ -6,6 +6,7 @@ use App\Repository\MobileRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 
 #[ORM\Entity(repositoryClass: MobileRepository::class)]
 class Mobile
@@ -13,18 +14,23 @@ class Mobile
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['mobiles', 'mobile'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['mobiles', 'mobile'])]
     private ?string $model = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['mobiles', 'mobile'])]
     private ?string $mark = null;
 
     #[ORM\Column(length: 2048, nullable: true)]
+    #[Groups(['mobiles'])]
     private ?string $shortDescription = null;
 
     #[ORM\Column(length: 2048, nullable: true)]
+    #[Groups(['mobile'])]
     private ?string $longDescription = null;
 
     #[ORM\Column]
