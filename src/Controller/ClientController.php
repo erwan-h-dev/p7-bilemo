@@ -2,107 +2,110 @@
 
 namespace App\Controller;
 
+use App\Dto\UserDto;
 use App\Entity\User;
 use App\Services\UserService;
 use App\Repository\UserRepository;
+use App\Services\VersioningService;
 use App\Repository\ClientRepository;
+use JMS\Serializer\SerializerInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use JMS\Serializer\SerializationContext;
 use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
+use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-
-#[Route('api/utilisateurs')]
+#[Route('api/users')]
 class ClientController extends AbstractController
 {
     public function __construct(
         private EntityManagerInterface $em,
+        private Security $security,
+        private SerializerInterface $serializer,
+        private TagAwareCacheInterface $cache,
         private ClientRepository $clientRepository,
         private UserRepository $userRepository,
-        private UserService $userService
+        private UserService $userService,
+        private VersioningService $versioningService
     ) { }
 
-    #[Route(name: 'app_clients', methods: ['GET'])]
-    public function apiUtilisateurs(Request $request, TagAwareCacheInterface $cache): JsonResponse
+    #[Route(name: 'get_users', methods: ['GET'])]
+    public function getUsers(Request $request): JsonResponse
     {
         $client = $this->getUser();
 
         $page = $request->query->get('page', 1);
         $limit = $request->query->get('limit', 10);
 
-        $cacheIndex = 'app_clients'. $client->getId().'_' . $page . '_' . $limit;
+        $cacheIndex = 'users'. $client->getId().'_' . $page . '_' . $limit;
 
-        $utilisateurs = $cache->get($cacheIndex, function (ItemInterface $item) use ($client, $page, $limit) {
-            $item->tag("utilisateursCache");
+        $users = $this->cache->get($cacheIndex, function (ItemInterface $item) use ($client, $page, $limit) {
+            $item->tag("usersCache");
             return $this->userRepository->findAllByClientPaginate($client, $page, $limit);
         });
 
-        $cacheTotalUtilisateurIndex = 'app_utilisateurs_total';	
+        $context = SerializationContext::create()->setGroups(['users']);
+        $context->setVersion($this->versioningService->getVersion());
+        $jsonUsers = $this->serializer->serialize($users, 'json', $context);
 
-        $totalUtilisateur = $cache->get($cacheTotalUtilisateurIndex, function (ItemInterface $item) use ($client) {
-            $item->tag("totalUtilisateursCache");
-            return $this->userRepository->countByClient($client);
-        });
-
-        return $this->json([
-            "data" => $utilisateurs,
-            "page" => $page,
-            "limit" => $limit,
-            "total" => $totalUtilisateur,
-        ], Response::HTTP_OK, [], ['groups' => 'users']);
+        return new JsonResponse($jsonUsers, Response::HTTP_OK, [], true);
     }
 
-    #[Route('/{id}', name: 'app_client', methods: ['GET'])]
-    public function apiUtilisateur(User $user): JsonResponse
+    #[Route('/{id}', name: 'get_user', methods: ['GET'])]
+    public function get_User(User $user): JsonResponse
     {
-
         if($user->getClient() !== $this->getUser()) {
             return $this->json([
-                'message' => 'Vous n\'avez pas les droits suffisants pour accéder à cet utilisateur'
+                'message' => 'Vous n\'avez pas les droits suffisants pour accéder à cet user'
             ], Response::HTTP_FORBIDDEN);
         }
 
-        return $this->json($user, Response::HTTP_OK, [], ['groups' => 'user']);
+        // appel du groupe de donnée souhaité
+        $context = SerializationContext::create()->setGroups(['user']);
+        $context->setVersion($this->versioningService->getVersion());
+        $jsonUser = $this->serializer->serialize($user, 'json', $context);
+
+        return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
     }
 
-    #[Route(name: 'app_utilisateur_create', methods: ['POST'])]
-    public function apiUtilisateurCreate(Request $request): JsonResponse
+    #[Route(name: 'create_user', methods: ['POST'])]
+    public function createUser(Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
 
-        $user = $this->userService->createUser($data);
+        $user = $this->userService->create($request);
 
-        return $this->json([
-            'message' => 'utilisateur Created',
-            'id' => $user->getId()
-        ], Response::HTTP_CREATED);
+        $this->cache->invalidateTags(["usersCache"]);
+
+        $context = SerializationContext::create()->setGroups(['user']);
+        $context->setVersion($this->versioningService->getVersion());
+        $jsonUser = $this->serializer->serialize($user, 'json', $context);
+
+        return new JsonResponse($jsonUser, Response::HTTP_CREATED, [], true);
     }
 
-    #[Route('/{id}', name: 'app_utilisateur_update', methods: ['PATCH'])]
-    public function apiUtilisateurUpdate(Request $request, User $user): JsonResponse
+    #[Route('/{id}', name: 'update_user', methods: ['POST'])]
+    public function updateUser(User $user, #[MapRequestPayload] UserDto $userDto): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $this->userService->update($user, $userDto);
 
-        $this->userService->updateUser($user, $data);
+        $this->cache->invalidateTags(["usersCache"]);
 
-        return $this->json([
-            'message' => 'user Updated',
-        ], Response::HTTP_OK);
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/{id}', name: 'app_utilisateur_delete', methods: ['DELETE'])]
-    public function apiUtilisateurDelete(User $user, TagAwareCacheInterface $cache): JsonResponse
+    #[Route('/{id}', name: 'delete_user', methods: ['DELETE'])]
+    public function deleteUser(User $user): JsonResponse
     {
-        $cache->invalidateTags(["utilisateursCache", "totalUtilisateursCache"]);
+        $this->cache->invalidateTags(["usersCache"]);
         
         $this->em->remove($user);
         $this->em->flush();
 
-        return $this->json([
-            'message' => 'user Deleted',
-        ], Response::HTTP_NO_CONTENT);
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 }
