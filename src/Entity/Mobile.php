@@ -2,12 +2,53 @@
 
 namespace App\Entity;
 
-use App\Repository\MobileRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Serializer\Annotation\Groups;
+use App\Repository\MobileRepository;
+use JMS\Serializer\Annotation\Groups;
+use Hateoas\Configuration\Annotation as Hateoas;
 
+/**
+ * 
+ * @Hateoas\Relation(
+ *      "self",
+ *      href = @Hateoas\Route(
+ *          "get_mobile",
+ *          parameters = { 
+ *              "id" = "expr(object.getId())" 
+ *          }
+ *      ),
+ *      exclusion = @Hateoas\Exclusion(groups = {"mobiles"})
+ *  )
+ * 
+ * @Hateoas\Relation(
+ *      "update",
+ *      href = @Hateoas\Route(
+ *          "update_mobile",
+ *          parameters = { 
+ *              "id" = "expr(object.getId())"
+ *          }
+ *      ),
+ *      exclusion = @Hateoas\Exclusion(
+ *          groups = {"mobiles", "mobile"},
+ *          excludeIf = "expr(not is_granted('ROLE_ADMIN'))"
+ *      )
+ * )
+ * 
+ * @Hateoas\Relation(
+ *      "delete",
+ *      href = @Hateoas\Route(
+ *          "delete_mobile",
+ *          parameters = {
+ *              "id" = "expr(object.getId())"
+ *          }
+ *      ),
+ *      exclusion = @Hateoas\Exclusion(
+ *          groups = {"mobiles", "mobile"},
+ *          excludeIf = "expr(not is_granted('ROLE_ADMIN'))"
+ *      )
+ * )
+ * 
+ */
 #[ORM\Entity(repositoryClass: MobileRepository::class)]
 class Mobile
 {
