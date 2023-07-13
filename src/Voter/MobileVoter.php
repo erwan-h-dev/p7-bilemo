@@ -9,7 +9,6 @@ use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 
 class MobileVoter extends Voter
 {
-    const CAN_SHOW = 'show';
     const CAN_CREATE = 'create';
     const CAN_EDIT = 'edit';
     const CAN_DELETE = 'delete';
@@ -42,7 +41,7 @@ class MobileVoter extends Voter
 
     private function canCreate(Mobile $subject, Client $currentUser): bool
     {
-        if (in_array('ROLE_ADMIN', $currentUser->getRoles())) {
+        if ($this->canEdit($subject, $currentUser)) {
             return true;
         }
 
@@ -61,7 +60,8 @@ class MobileVoter extends Voter
 
     private function canDelete(Mobile $subject, Client $currentUser): bool
     {
-        if (in_array('ROLE_ADMIN', $currentUser->getRoles())) {
+        if ($this->canEdit($subject, $currentUser)) {
+
             return true;
         }
 

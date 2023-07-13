@@ -48,32 +48,32 @@ class User
     #[Groups(['user', 'users'])]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(inversedBy: 'users')]
+    #[ORM\ManyToOne(inversedBy:'users')]
 
     private ?Client $client = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['user', 'users'])]
+    #[Groups(['user','users', 'create'])]
     private ?string $firstName = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['user', 'users'])]
+    #[Groups(['user','users', 'create'])]
     private ?string $lastName = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['user'])]
+    #[Groups(['user', 'create'])]
     private ?string $email = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['user'])]
+    #[Groups(['user', 'create'])]
     private ?string $adress = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['user'])]
+    #[Groups(['user', 'create'])]
     private ?string $postalCode = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['user'])]
+    #[Groups(['user', 'create'])]
     private ?string $city = null;
 
     public function getId(): ?int

@@ -59,19 +59,19 @@ class Mobile
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['mobiles', 'mobile'])]
+    #[Groups(['mobiles', 'mobile', 'create'])]
     private ?string $model = null;
 
     #[ORM\Column(length: 255, nullable: true)]
-    #[Groups(['mobiles', 'mobile'])]
+    #[Groups(['mobiles','mobile', 'create'])]
     private ?string $mark = null;
 
     #[ORM\Column(length: 2048, nullable: true)]
-    #[Groups(['mobiles'])]
+    #[Groups(['mobiles', 'create'])]
     private ?string $shortDescription = null;
 
     #[ORM\Column(length: 2048, nullable: true)]
-    #[Groups(['mobile'])]
+    #[Groups(['mobile', 'create'])]
     private ?string $longDescription = null;
 
     #[ORM\Column]

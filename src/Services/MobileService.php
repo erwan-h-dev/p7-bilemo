@@ -7,13 +7,15 @@ use App\Entity\Mobile;
 use JMS\Serializer\SerializerInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Bundle\SecurityBundle\Security;
 
 class MobileService
 {
 
     public function __construct(
         private EntityManagerInterface $em,
-        private SerializerInterface $serializer
+        private SerializerInterface $serializer,
+        private Security $security
     ){ }
     
     public function update(Mobile $mobile, MobileDto $mobileDto): void
@@ -34,13 +36,21 @@ class MobileService
             $mobile->setLongDescription($mobileDto->longDescription);
         }
         
+        $mobile->setUpdatedAt(new \DateTimeImmutable());
+        
         $this->em->flush();
     }
 
     public function create(Request $request): Mobile
     {
         $mobile = $this->serializer->deserialize($request->getContent(), Mobile::class, 'json');
-        
+
+        $this->security->denyAccessUnlessGranted('show', $mobile);
+
+        $mobile->setCreatedAt(new \DateTimeImmutable())
+            ->setUpdatedAt(new \DateTimeImmutable())
+        ;
+
         $this->em->persist($mobile);
         $this->em->flush();
 

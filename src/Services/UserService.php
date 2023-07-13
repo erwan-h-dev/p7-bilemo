@@ -7,12 +7,14 @@ use App\Entity\User;
 use JMS\Serializer\SerializerInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 class UserService 
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private SerializerInterface $serializer
+        private SerializerInterface $serializer,
+        private TokenStorageInterface $tokenStorage
     ) {
     }
 
@@ -43,6 +45,10 @@ class UserService
     public function create(Request $request): User
     {
         $user = $this->serializer->deserialize($request->getContent(), User::class, 'json');
+
+        $client = $this->tokenStorage->getToken()->getUser();
+
+        $user->setClient($client);
 
         $this->em->persist($user);
         $this->em->flush();
