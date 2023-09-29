@@ -4,26 +4,29 @@ namespace App\Controller;
 
 use App\Dto\UserDto;
 use App\Entity\User;
+use App\Entity\Client;
 use App\Services\UserService;
+use OpenApi\Attributes as OA;
 use App\Repository\UserRepository;
 use App\Services\VersioningService;
 use App\Repository\ClientRepository;
 use JMS\Serializer\SerializerInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use JMS\Serializer\SerializationContext;
+use Nelmio\ApiDocBundle\Annotation\Model;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Nelmio\ApiDocBundle\Annotation\Model;
-use OpenApi\Attributes as OA;
-#[Route('api/users')]
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
+#[Route('api/clients')]
 class ClientController extends AbstractController
 {
     public function __construct(
@@ -40,7 +43,7 @@ class ClientController extends AbstractController
     /**
      * Retourne une liste paginé de users
      */
-    #[Route(name: 'get_users', methods: ['GET'])]
+    #[Route(path:'{id}/users', name: 'get_users', methods: ['GET'])]
     #[OA\Response(
         response: 200,
         description: "Renvoie la liste des users",
@@ -62,10 +65,8 @@ class ClientController extends AbstractController
         schema: new OA\Schema(type: "integer")
     )]
     #[OA\Tag(name: "Users")]
-    public function getUsers(Request $request): JsonResponse
+    public function getUsers(Client $client, Request $request): JsonResponse
     {
-        $client = $this->getUser();
-
         $page = $request->query->get('page', 1);
         $limit = $request->query->get('limit', 10);
 
@@ -89,7 +90,7 @@ class ClientController extends AbstractController
     /**
      * Retourne un user
      */
-    #[Route('/{id}', name: 'get_user', methods: ['GET'])]
+    #[Route('/{client_id}/users/{user_id}', name: 'get_user', methods: ['GET'])]
     #[OA\Response(
         response: 200,
         description: "Retourne un user",
@@ -99,10 +100,12 @@ class ClientController extends AbstractController
         )
     )]
     #[OA\Tag(name: "Users")]
-    #[IsGranted('show', 'user')]
-    public function get_User(User $user): JsonResponse
+    #[IsGranted('show', 'user', 'Vous n\'avez pas les droits suffisants pour modifier cet user')]
+    #[ParamConverter('client', options: ['mapping' => ['client_id' => 'id']])]
+    #[ParamConverter('user', options: ['mapping' => ['user_id' => 'id']])]
+    public function get_User(Client $client, User $user): JsonResponse // getUser method is already used by Symfony in AbstractController
     {
-        if($user->getClient() !== $this->getUser()) {
+        if($user->getClient() !== $client) {
             return $this->json([
                 'message' => 'Vous n\'avez pas les droits suffisants pour accéder à cet user'
             ], Response::HTTP_FORBIDDEN);
@@ -119,7 +122,7 @@ class ClientController extends AbstractController
     /**
      * Créer un user
      */
-    #[Route(name: 'create_user', methods: ['POST'])]
+    #[Route(path: '/{client_id}/users', name: 'create_user', methods: ['POST'])]
     #[OA\RequestBody(
         description: "data du user",
         required: true,
@@ -130,10 +133,16 @@ class ClientController extends AbstractController
     )]
     #[OA\Tag(name: "Users")]
     #[IsGranted('ROLE_USER')]
-    public function createUser(Request $request): JsonResponse
+    #[ParamConverter('client', options: ['mapping' => ['client_id' => 'id']])]
+    public function createUser(Request $request, Client $client): JsonResponse
     {
-        
-        $user = $this->userService->create($request);
+        if($client !== $this->security->getUser()) {
+            return $this->json([
+                'message' => 'Vous n\'avez pas les droits suffisants pour créer un user'
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $user = $this->userService->create($request, $client);
         
         $this->cache->invalidateTags(["usersCache"]);
 
@@ -148,7 +157,7 @@ class ClientController extends AbstractController
     /**
      * Modifie un user
      */
-    #[Route('/{id}', name: 'update_user', methods: ['PUT'])]
+    #[Route('/{client_id}/users/{user_id}', name: 'update_user', methods: ['PUT'])]
     #[OA\Response(
         response: Response::HTTP_NO_CONTENT,
         description: "Modifie un user",
@@ -163,8 +172,10 @@ class ClientController extends AbstractController
         )
     )]
     #[OA\Tag(name: "Users")]
-    #[IsGranted('edit', 'user')]
-    public function updateUser(User $user, #[MapRequestPayload] UserDto $userDto): JsonResponse
+    #[IsGranted('edit', 'user', 'Vous n\'avez pas les droits suffisants pour modifier cet user')]
+    #[ParamConverter('client', options: ['mapping' => ['client_id' => 'id']])]
+    #[ParamConverter('user', options: ['mapping' => ['user_id' => 'id']])]
+    public function updateUser(User $user, Client $client, #[MapRequestPayload] UserDto $userDto): JsonResponse
     {
         $this->userService->update($user, $userDto);
 
@@ -176,14 +187,15 @@ class ClientController extends AbstractController
     /**
      * Supprime un user
      */
-    #[Route('/{id}', name: 'delete_user', methods: ['DELETE'])]
+    #[Route('/{client_id}/users/{user_id}', name: 'delete_user', methods: ['DELETE'])]
     #[OA\Response(
         response: Response::HTTP_NO_CONTENT,
         description: "supprime un user",
         content: null
     )]
     #[OA\Tag(name: "Users")]
-    #[IsGranted('delete', 'user')]
+    #[IsGranted('delete', 'user', 'Vous n\'avez pas les droits suffisants pour supprimer cet user')]
+    #[ParamConverter('user', options: ['mapping' => ['user_id' => 'id']])]
     public function deleteUser(User $user): JsonResponse
     {
         $this->cache->invalidateTags(["usersCache"]);

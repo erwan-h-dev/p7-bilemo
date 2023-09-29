@@ -42,11 +42,9 @@ class UserService
         $this->em->flush();
     }
 
-    public function create(Request $request): User
+    public function create(Request $request, $client): User
     {
         $user = $this->serializer->deserialize($request->getContent(), User::class, 'json');
-
-        $client = $this->tokenStorage->getToken()->getUser();
 
         $user->setClient($client);
 

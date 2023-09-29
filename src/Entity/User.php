@@ -12,7 +12,10 @@ use Hateoas\Configuration\Annotation as Hateoas;
  *      "self",
  *      href = @Hateoas\Route(
  *          "get_user",
- *          parameters = { "id" = "expr(object.getId())" },
+ *          parameters = { 
+ *              "user_id" = "expr(object.getId())",
+ *              "client_id" = "expr(object.getClient().getId())"
+ *          },
  *      ),
  *      exclusion = @Hateoas\Exclusion(groups = {"users"})
  * )
@@ -20,8 +23,11 @@ use Hateoas\Configuration\Annotation as Hateoas;
  * @Hateoas\Relation(
  *      "update",
  *      href = @Hateoas\Route(
- *          "get_user",
- *          parameters = { "id" = "expr(object.getId())" },
+ *          "update_user",
+ *          parameters = { 
+ *              "user_id" = "expr(object.getId())", 
+ *              "client_id" = "expr(object.getClient().getId())" 
+ *          },
  *      ),
  *      exclusion = @Hateoas\Exclusion(
  *          groups = {"users", "user"}
@@ -31,8 +37,11 @@ use Hateoas\Configuration\Annotation as Hateoas;
  * @Hateoas\Relation(
  *      "delete",
  *      href = @Hateoas\Route(
- *          "get_user",
- *          parameters = { "id" = "expr(object.getId())" },
+ *          "delete_user",
+ *          parameters = { 
+ *              "user_id" = "expr(object.getId())", 
+ *              "client_id" = "expr(object.getClient().getId())" 
+ *          },
  *      ),
  *      exclusion = @Hateoas\Exclusion(groups = {"users", "user"})
  * )
