@@ -63,7 +63,6 @@ class MobileController extends AbstractController
     #[OA\Tag(name: "Mobiles")]
     public function getMobiles(Request $request): JsonResponse
     {
-        
         $page = $request->query->get('page', 1);
         $limit = $request->query->get('limit', 10);
 
@@ -111,89 +110,5 @@ class MobileController extends AbstractController
         $jsonMobile = $this->serializer->serialize($mobile, 'json', $context);
 
         return new JsonResponse($jsonMobile, Response::HTTP_OK, [], true);
-    }
-
-    /**
-     * Créer un mobile
-     */
-    #[Route(name: 'create_mobile', methods: ['POST'])]
-    #[OA\Response(
-        response: Response::HTTP_CREATED,
-        description: "Créer un mobile",
-        content: new OA\JsonContent(
-            type: "array",
-            items: new OA\Items(ref: new Model(type: Mobile::class, groups: ["mobile"]))
-        )
-    )]
-    #[OA\RequestBody(
-        description: "data du mobile",
-        required: true,
-        content: new OA\JsonContent(
-            type: "array",
-            items: new OA\Items(ref: new Model(type: Mobile::class, groups: ["create"]))
-        )
-    )]
-    #[OA\Tag(name: "Mobiles")]
-    #[IsGranted('create', 'mobile')]
-    public function createMobile(Request $request): JsonResponse
-    {
-        // création d'un nouveau mobile
-        $mobile = $this->mobileService->create($request);
-
-        $context = SerializationContext::create()->setGroups(['mobile']);
-        $context->setVersion($this->versioningService->getVersion());
-        $jsonMobile = $this->serializer->serialize($mobile, 'json', $context);
-
-        return new JsonResponse($jsonMobile, Response::HTTP_CREATED, [], true);
-    }
-
-    /**
-     * Modifie un mobile
-     */
-    #[Route('/{id}', name: 'update_mobile', methods: ['PUT'])]
-    #[OA\Response(
-        response: Response::HTTP_NO_CONTENT,
-        description: "Modifie un mobile",
-        content: null
-    )]
-    #[OA\RequestBody(
-        description: "data du mobile",
-        required: true,
-        content: new OA\JsonContent(
-            type: "array",
-            items: new OA\Items(ref: new Model(type: Mobile::class, groups: ["create"]))
-        )
-    )]
-    #[OA\Tag(name: "Mobiles")]
-    #[IsGranted('edit', 'mobile')]
-    public function updateMobile(Mobile $mobile,  #[MapRequestPayload] MobileDto $mobileDto): JsonResponse
-    {
-
-        $this->mobileService->update($mobile, $mobileDto);
-
-        $this->cache->invalidateTags(["mobilesCache"]);
-
-        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
-    }
-
-    /**
-     * Supprime un mobile
-     */
-    #[Route('/{id}', name: 'delete_mobile', methods: ['DELETE'])]
-    #[OA\Response(
-        response: Response::HTTP_NO_CONTENT,
-        description: "Supprime un mobile",
-        content: null
-    )]
-    #[OA\Tag(name: "Mobiles")]
-    #[IsGranted('delete', 'mobile')]
-    public function deleteMobile(Mobile $mobile): JsonResponse
-    {
-        $this->cache->invalidateTags(["mobilesCache"]);
-
-        $this->em->remove($mobile);
-        $this->em->flush();
-
-        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 }
