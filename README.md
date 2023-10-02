@@ -51,3 +51,7 @@ php bin/console doctrine:fixtures:load
 - The default client account is : 
     * username : client
     * password : password
+
+
+## DOCUMENTATION
+the documentation is available at the route "/api/doc"
