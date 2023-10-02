@@ -26,7 +26,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
-#[Route('api/clients')]
+#[Route('api/clients/')]
 class ClientController extends AbstractController
 {
     public function __construct(
@@ -43,7 +43,7 @@ class ClientController extends AbstractController
     /**
      * Retourne une liste paginé de users
      */
-    #[Route(path:'{id}/users', name: 'get_users', methods: ['GET'])]
+    #[Route(path:'{client_id}/users', name: 'get_users', methods: ['GET'])]
     #[OA\Response(
         response: 200,
         description: "Renvoie la liste des users",
@@ -65,6 +65,7 @@ class ClientController extends AbstractController
         schema: new OA\Schema(type: "integer")
     )]
     #[OA\Tag(name: "Users")]
+    #[ParamConverter('client', options: ['mapping' => ['client_id' => 'id']])]
     public function getUsers(Client $client, Request $request): JsonResponse
     {
         $page = $request->query->get('page', 1);
@@ -90,7 +91,7 @@ class ClientController extends AbstractController
     /**
      * Retourne un user
      */
-    #[Route('/{client_id}/users/{user_id}', name: 'get_user', methods: ['GET'])]
+    #[Route('{client_id}/users/{user_id}', name: 'get_user', methods: ['GET'])]
     #[OA\Response(
         response: 200,
         description: "Retourne un user",
@@ -122,7 +123,7 @@ class ClientController extends AbstractController
     /**
      * Créer un user
      */
-    #[Route(path: '/{client_id}/users', name: 'create_user', methods: ['POST'])]
+    #[Route(path: '{client_id}/users', name: 'create_user', methods: ['POST'])]
     #[OA\RequestBody(
         description: "data du user",
         required: true,
@@ -157,7 +158,7 @@ class ClientController extends AbstractController
     /**
      * Modifie un user
      */
-    #[Route('/{client_id}/users/{user_id}', name: 'update_user', methods: ['PUT'])]
+    #[Route('{client_id}/users/{user_id}', name: 'update_user', methods: ['PATCH'])]
     #[OA\Response(
         response: Response::HTTP_NO_CONTENT,
         description: "Modifie un user",
@@ -187,7 +188,7 @@ class ClientController extends AbstractController
     /**
      * Supprime un user
      */
-    #[Route('/{client_id}/users/{user_id}', name: 'delete_user', methods: ['DELETE'])]
+    #[Route('{client_id}/users/{user_id}', name: 'delete_user', methods: ['DELETE'])]
     #[OA\Response(
         response: Response::HTTP_NO_CONTENT,
         description: "supprime un user",
