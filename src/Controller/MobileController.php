@@ -48,6 +48,10 @@ class MobileController extends AbstractController
             items: new OA\Items(ref: new Model(type: Mobile::class, groups: ["mobiles"]))
         )
     )]
+    #[OA\Response(
+        response: Response::HTTP_UNAUTHORIZED,
+        description: "JWT Token not found"
+    )]
     #[OA\Parameter(
         name: "page",
         in: "query",
@@ -78,14 +82,12 @@ class MobileController extends AbstractController
             return $this->mobileRepository->findAllPaginate($page, $limit);
         });
 
-
         // serialisation des données
         $context = SerializationContext::create()->setGroups(['mobiles']);
         $context->setVersion($this->versioningService->getVersion());
         $jsonMobiles = $this->serializer->serialize($mobiles, 'json', $context);
 
         return new JsonResponse($jsonMobiles, Response::HTTP_OK, [], true);
-       
     }
 
     /**
@@ -95,10 +97,15 @@ class MobileController extends AbstractController
     #[OA\Response(
         response: Response::HTTP_OK,
         description: "Retourne un mobile",
-        content: new OA\JsonContent(
-            type: "array",
-            items: new OA\Items(ref: new Model(type: Mobile::class, groups: ["mobile"]))
-        )
+        content: new Model(type: Mobile::class)
+    )]
+    #[OA\Response(
+        response: Response::HTTP_UNAUTHORIZED,
+        description: "JWT Token not found"
+    )]
+    #[OA\Response(
+        response: Response::HTTP_NOT_FOUND,
+        description: "La ressource demandée n'existe pas."
     )]
     #[OA\Tag(name: "Mobiles")]
     public function getMobile(Mobile $mobile): JsonResponse

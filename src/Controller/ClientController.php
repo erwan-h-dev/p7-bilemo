@@ -45,12 +45,24 @@ class ClientController extends AbstractController
      */
     #[Route(path:'{client_id}/users', name: 'get_users', methods: ['GET'])]
     #[OA\Response(
-        response: 200,
+        response: Response::HTTP_OK,
         description: "Renvoie la liste des users",
         content: new OA\JsonContent(
             type: "array",
             items: new OA\Items(ref: new Model(type: User::class, groups: ["users"]))
         )
+    )]
+    #[OA\Response(
+        response: Response::HTTP_UNAUTHORIZED,
+        description: "JWT Token not found"
+    )]
+    #[OA\Response(
+        response: Response::HTTP_FORBIDDEN,
+        description: "Vous n\'avez pas les droits suffisants pour accéder à cet user"
+    )]
+    #[OA\Response(
+        response: Response::HTTP_NOT_FOUND,
+        description: "La ressource demandée n'existe pas."
     )]
     #[OA\Parameter(
         name: "page",
@@ -65,6 +77,7 @@ class ClientController extends AbstractController
         schema: new OA\Schema(type: "integer")
     )]
     #[OA\Tag(name: "Users")]
+    #[IsGranted('show', 'client', 'Vous n\'avez pas les droits suffisants pour accéder à cet user')]
     #[ParamConverter('client', options: ['mapping' => ['client_id' => 'id']])]
     public function getUsers(Client $client, Request $request): JsonResponse
     {
@@ -77,6 +90,7 @@ class ClientController extends AbstractController
             $item->tag("usersCache");
             return $this->userRepository->findAllByClientPaginate($client, $page, $limit);
         });
+
         foreach($users as $user) {
             $this->denyAccessUnlessGranted('show', $user);
         }
@@ -93,12 +107,21 @@ class ClientController extends AbstractController
      */
     #[Route('{client_id}/users/{user_id}', name: 'get_user', methods: ['GET'])]
     #[OA\Response(
-        response: 200,
+        response: Response::HTTP_OK,
         description: "Retourne un user",
-        content: new OA\JsonContent(
-            type: "array",
-            items: new OA\Items(ref: new Model(type: User::class, groups: ["user"]))
-        )
+        content: new Model(type: User::class)
+    )]
+    #[OA\Response(
+        response: Response::HTTP_UNAUTHORIZED,
+        description: "JWT Token not found"
+    )]
+    #[OA\Response(
+        response: Response::HTTP_FORBIDDEN,
+        description: "Vous n\'avez pas les droits suffisants pour accéder à cet user"
+    )]
+    #[OA\Response(
+        response: Response::HTTP_NOT_FOUND,
+        description: "La ressource demandée n'existe pas."
     )]
     #[OA\Tag(name: "Users")]
     #[IsGranted('show', 'user', 'Vous n\'avez pas les droits suffisants pour modifier cet user')]
@@ -106,11 +129,6 @@ class ClientController extends AbstractController
     #[ParamConverter('user', options: ['mapping' => ['user_id' => 'id']])]
     public function get_User(Client $client, User $user): JsonResponse // getUser method is already used by Symfony in AbstractController
     {
-        if($user->getClient() !== $client) {
-            return $this->json([
-                'message' => 'Vous n\'avez pas les droits suffisants pour accéder à cet user'
-            ], Response::HTTP_FORBIDDEN);
-        }
 
         // appel du groupe de donnée souhaité
         $context = SerializationContext::create()->setGroups(['user']);
@@ -127,10 +145,19 @@ class ClientController extends AbstractController
     #[OA\RequestBody(
         description: "data du user",
         required: true,
-        content: new OA\JsonContent(
-            type: "array",
-            items: new OA\Items(ref: new Model(type: User::class, groups: ["create"]))
-        )
+        content: new Model(type: User::class)
+    )]
+    #[OA\Response(
+        response: Response::HTTP_UNAUTHORIZED,
+        description: "JWT Token not found"
+    )]
+    #[OA\Response(
+        response: Response::HTTP_FORBIDDEN,
+        description: "Vous n\'avez pas les droits suffisants pour accéder à cet user"
+    )]
+    #[OA\Response(
+        response: Response::HTTP_NOT_FOUND,
+        description: "La ressource demandée n'existe pas."
     )]
     #[OA\Tag(name: "Users")]
     #[IsGranted('ROLE_USER')]
@@ -164,13 +191,23 @@ class ClientController extends AbstractController
         description: "Modifie un user",
         content: null
     )]
+    
+    #[OA\Response(
+        response: Response::HTTP_UNAUTHORIZED,
+        description: "JWT Token not found"
+    )]
+    #[OA\Response(
+        response: Response::HTTP_FORBIDDEN,
+        description: "Vous n\'avez pas les droits suffisants pour accéder à cet user"
+    )]
+    #[OA\Response(
+        response: Response::HTTP_NOT_FOUND,
+        description: "La ressource demandée n'existe pas."
+    )]
     #[OA\RequestBody(
         description: "data du user",
         required: true,
-        content: new OA\JsonContent(
-            type: "array",
-            items: new OA\Items(ref: new Model(type: User::class, groups: ["create"]))
-        )
+        content: new Model(type: User::class, groups: ["create"])
     )]
     #[OA\Tag(name: "Users")]
     #[IsGranted('edit', 'user', 'Vous n\'avez pas les droits suffisants pour modifier cet user')]
@@ -193,6 +230,18 @@ class ClientController extends AbstractController
         response: Response::HTTP_NO_CONTENT,
         description: "supprime un user",
         content: null
+    )]
+    #[OA\Response(
+        response: Response::HTTP_UNAUTHORIZED,
+        description: "JWT Token not found"
+    )]
+    #[OA\Response(
+        response: Response::HTTP_FORBIDDEN,
+        description: "Vous n\'avez pas les droits suffisants pour accéder à cet user"
+    )]
+    #[OA\Response(
+        response: Response::HTTP_NOT_FOUND,
+        description: "La ressource demandée n'existe pas."
     )]
     #[OA\Tag(name: "Users")]
     #[IsGranted('delete', 'user', 'Vous n\'avez pas les droits suffisants pour supprimer cet user')]
