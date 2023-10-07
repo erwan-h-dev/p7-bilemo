@@ -91,10 +91,6 @@ class ClientController extends AbstractController
             return $this->userRepository->findAllByClientPaginate($client, $page, $limit);
         });
 
-        foreach($users as $user) {
-            $this->denyAccessUnlessGranted('show', $user);
-        }
-        
         $context = SerializationContext::create()->setGroups(['users']);
         $context->setVersion($this->versioningService->getVersion());
         $jsonUsers = $this->serializer->serialize($users, 'json', $context);
